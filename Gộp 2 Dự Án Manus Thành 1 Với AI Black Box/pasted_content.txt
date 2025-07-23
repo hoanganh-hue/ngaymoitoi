@@ -1,0 +1,242 @@
+API Documentation
+Authentication
+All API requests require authentication using your API key. Include it in the Authorization header:
+
+Authorization: Bearer sk-Qz7-NKEIN7QgQ1PkBkRSTQ
+Making Requests
+Base URL
+https://api.blackbox.ai
+Chat Completions
+Send chat messages and receive AI-generated responses.
+
+Endpoint: POST /chat/completions
+
+Example Requests
+
+python
+Download
+Copy code
+import requests
+import json
+
+url = "https://api.blackbox.ai/chat/completions"
+user_api_key = 'sk-Qz7-NKEIN7QgQ1PkBkRSTQ'
+
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": f"Bearer {user_api_key}"
+}
+
+data = {
+    "model": "blackboxai/qwen/qwq-32b:free",
+    "messages": [
+        {
+            "role": "user",
+            "content": "What is the capital of France?"
+        }
+    ]
+}
+
+response = requests.post(url, headers=headers, json=data)
+print(response.json())
+Request Body Parameters
+model (string)
+
+The model ID to use
+See Models page for available options
+messages (array)
+
+Array of message objects
+Each object must have role and content fields
+Response Format
+json
+Download
+Copy code
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "choices": [{
+    "index": 0,
+    "message": {
+      "role": "assistant",
+      "content": "Paris is the capital of France."
+    },
+    "finish_reason": "stop"
+  }],
+  "usage": {
+    "prompt_tokens": 12,
+    "completion_tokens": 7,
+    "total_tokens": 19
+  }
+}
+Images & PDFs
+Blackbox AI supports sending images and PDFs via the API. This guide will show you how to work with both file types using our API.
+
+Note: You can send both PDF and images in the same request.
+
+Image Inputs
+Requests with images work with vision-capable models via the /chat/completions API. The image_url can either be a URL or a base64-encoded image. Multiple images can be sent in separate content array entries.
+
+Using Image URLs
+Here's how to send an image using a URL:
+
+Using Base64 Encoded Images
+For locally stored images, you can send them using base64 encoding:
+
+
+python
+Download
+Copy code
+import requests
+import json
+import base64
+from pathlib import Path
+
+def encode_image_to_base64(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
+
+url = "https://api.blackbox.ai/chat/completions"
+user_api_key = 'sk-Qz7-NKEIN7QgQ1PkBkRSTQ'
+
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": f"Bearer {user_api_key}"
+}
+
+# Read and encode the image
+image_path = "path/to/your/image.jpg"
+base64_image = encode_image_to_base64(image_path)
+data_url = f"data:image/jpeg;base64,{base64_image}"
+
+data = {
+    "model": "blackboxai/qwen/qwq-32b:free",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "What's in this image?"
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": data_url
+                    }
+                }
+            ]
+        }
+    ]
+}
+
+response = requests.post(url, headers=headers, json=data)
+print(response.json())
+Supported image content types:
+
+image/png
+image/jpeg
+image/webp
+PDF Support
+Blackbox AI supports PDF processing through the /chat/completions API. PDFs can be sent as base64-encoded data URLs in the messages array, via the file content type.
+
+Info: PDFs are processed and their content is extracted for analysis by the AI model.
+
+Processing PDFs
+Here's how to send and process a PDF:
+
+
+python
+Download
+Copy code
+import requests
+import json
+import base64
+from pathlib import Path
+
+def encode_pdf_to_base64(pdf_path):
+    with open(pdf_path, "rb") as pdf_file:
+        return base64.b64encode(pdf_file.read()).decode('utf-8')
+
+url = "https://api.blackbox.ai/chat/completions"
+user_api_key = 'sk-Qz7-NKEIN7QgQ1PkBkRSTQ'
+
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": f"Bearer {user_api_key}"
+}
+
+# Read and encode the PDF
+pdf_path = "path/to/your/document.pdf"
+base64_pdf = encode_pdf_to_base64(pdf_path)
+data_url = f"data:application/pdf;base64,{base64_pdf}"
+
+data = {
+    "model": "blackboxai/qwen/qwq-32b:free",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "What are the main points in this document?"
+                },
+                {
+                    "type": "file",
+                    "file": {
+                        "filename": "document.pdf",
+                        "file_data": data_url
+                    }
+                }
+            ]
+        }
+    ]
+}
+
+response = requests.post(url, headers=headers, json=data)
+print(response.json())
+Response Format
+The API will return a response in the following format:
+
+json
+Download
+Copy code
+{
+  "id": "chatcmpl-456",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "choices": [{
+    "index": 0,
+    "message": {
+      "role": "assistant",
+      "content": "The document discusses the main topics of artificial intelligence, machine learning algorithms, and their practical applications in modern software development..."
+    },
+    "finish_reason": "stop"
+  }],
+  "usage": {
+    "prompt_tokens": 2500,
+    "completion_tokens": 150,
+    "total_tokens": 2650
+  }
+}
+Error Handling
+The API uses conventional HTTP response codes:
+
+200: Success
+400: Bad Request
+401: Unauthorized
+429: Rate Limit Exceeded
+500: Internal Server Error
+Error responses include a message explaining what went wrong:
+
+json
+Download
+Copy code
+{
+  "error": {
+    "message": "Invalid API key provided",
+    "type": "invalid_request_error",
+    "code": "invalid_api_key"
+  }
+}
